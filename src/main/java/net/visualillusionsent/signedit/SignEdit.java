@@ -17,17 +17,13 @@
  */
 package net.visualillusionsent.signedit;
 
-import net.canarymod.api.entity.living.humanoid.Player;
 import net.visualillusionsent.minecraft.plugin.canary.VisualIllusionsCanaryPlugin;
-
-import java.util.ArrayList;
 
 public final class SignEdit extends VisualIllusionsCanaryPlugin {
 
-    private final ArrayList<Player> editors = new ArrayList<Player>();
-
     @Override
     public final boolean enable() {
+        super.enable();
         try {
             new SignEditListener(this);
         }
@@ -39,19 +35,5 @@ public final class SignEdit extends VisualIllusionsCanaryPlugin {
 
     @Override
     public final void disable() {
-    }
-
-    final boolean isEditing(Player player) {
-        if (editors.contains(player)) {
-            return editors.remove(player);
-        }
-        return false;
-    }
-
-    final boolean addEditing(Player player) {
-        if (editors.contains(player)) {
-            return false;
-        }
-        return editors.add(player);
     }
 }

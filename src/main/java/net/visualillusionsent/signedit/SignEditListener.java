@@ -49,10 +49,10 @@ public final class SignEditListener extends VisualIllusionsCanaryPluginInformati
     @HookHandler(priority = Priority.HIGH)
     public void onSignEdit(BlockRightClickHook hook) {
         if (isSign(hook.getBlockClicked().getType())) {
+            Sign sign = (Sign) hook.getBlockClicked().getTileEntity();
             Player player = hook.getPlayer();
             if (isEditing(player)) {
-                Sign sign = (Sign) hook.getBlockClicked().getTileEntity();
-                if (sign.isEditable() || sign.getOwner().equals(player) || player.hasPermission("signedit.editall")) {
+                if (sign.isEditable() || player.equals(sign.getOwner()) || player.hasPermission("signedit.editall")) {
                     sign.setEditable(true);
                     player.openSignEditWindow(sign);
                 }

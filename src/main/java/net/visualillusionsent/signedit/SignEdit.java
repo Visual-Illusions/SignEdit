@@ -28,6 +28,7 @@ public final class SignEdit extends VisualIllusionsCanaryPlugin {
             new SignEditListener(this);
         }
         catch (Exception ex) {
+            getLogman().warn("SignEdit failed to enable...", ex);
             return false;
         }
         return true;

@@ -17,7 +17,6 @@
  */
 package net.visualillusionsent.signedit;
 
-import net.canarymod.Canary;
 import net.canarymod.api.entity.living.humanoid.Player;
 import net.canarymod.api.world.blocks.BlockType;
 import net.canarymod.api.world.blocks.Sign;
@@ -42,8 +41,8 @@ public final class SignEditListener extends VisualIllusionsCanaryPluginInformati
 
     public SignEditListener(SignEdit signedit) throws CommandDependencyException {
         super(signedit);
-        Canary.hooks().registerListener(this, signedit);
-        Canary.commands().registerCommands(this, signedit, false);
+        signedit.registerListener(this);
+        signedit.registerCommands(this, false);
         this.signedit = signedit;
     }
 
@@ -105,7 +104,8 @@ public final class SignEditListener extends VisualIllusionsCanaryPluginInformati
             aliases = { "info" },
             description = "SignEdit Information Command",
             permissions = { "signedit" },
-            toolTip = "/signedit info"
+            toolTip = "/signedit info",
+            parent = "signedit"
     )
     public final void infoCommand(MessageReceiver msgrec, String[] args) {
         super.sendInformation(msgrec);

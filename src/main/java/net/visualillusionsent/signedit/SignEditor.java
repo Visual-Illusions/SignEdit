@@ -41,13 +41,65 @@ final class SignEditor {
         }
     }
 
-    SignEditor(Player player, boolean persistent) {
+    SignEditor(Player player) {
         this.player = player;
-        this.persistent = persistent;
     }
 
     final boolean isEditing() {
         return editing;
+    }
+
+    final boolean isPersistent() {
+        return persistent;
+    }
+
+    final boolean isCopying() {
+        return copying;
+    }
+
+    final boolean isPasting() {
+        return pasting;
+    }
+
+    final SignEditor enableEditing() {
+        allOff();
+        this.editing = true;
+        return this;
+    }
+
+    final SignEditor enablePersistance() {
+        this.persistent = true;
+        return this;
+    }
+
+    final void enableCopying() {
+        this.editing = true;
+        this.copying = true;
+        this.pasting = false; //Can't do both, so turn off pasting
+        this.persistent = false; // Shouldn't persistently copy text
+    }
+
+    final SignEditor enablePasting() {
+        this.editing = true;
+        this.pasting = true;
+        this.copying = false; //Can't do both, so turn off copying
+        return this;
+    }
+
+    final SignEditor allOff() {
+        this.editing = false;
+        this.persistent = false;
+        this.pasting = false;
+        this.copying = false;
+        return this;
+    }
+
+    final String[] getCopied() {
+        return copied.clone();
+    }
+
+    final void storeCopied(String[] text) {
+        this.copied = text.clone();
     }
 
     final void loadSignText(String file) {
@@ -78,14 +130,6 @@ final class SignEditor {
         }
     }
 
-    final String[] getCopied() {
-        return copied.clone();
-    }
-
-    final void storeCopied(String[] text) {
-        this.copied = text.clone();
-    }
-
     final boolean saveSignText(String fileName) {
         boolean ret = true;
         PrintWriter out = null;
@@ -106,42 +150,6 @@ final class SignEditor {
             }
         }
         return ret;
-    }
-
-    final boolean isPersistent() {
-        return persistent;
-    }
-
-    final void setPersistance(boolean persist) {
-        this.persistent = persist;
-    }
-
-    final boolean isCopying() {
-        return copying;
-    }
-
-    final void enableCopying() {
-        this.editing = true;
-        this.copying = true;
-        this.pasting = false; //Can't do both, so turn off pasting
-        this.persistent = false; // Shouldn't persistently copy text
-    }
-
-    final void enablePasting() {
-        this.editing = true;
-        this.pasting = true;
-        this.copying = false; //Can't do both, so turn off copying
-    }
-
-    final void allOff() {
-        this.editing = false;
-        this.persistent = false;
-        this.pasting = false;
-        this.copying = false;
-    }
-
-    final boolean isPasting() {
-        return pasting;
     }
 
     public final boolean equals(Object obj) {

@@ -102,7 +102,7 @@ public final class SignEditListener extends VisualIllusionsCanaryPluginInformati
     )
     public final void editCommand(MessageReceiver msgrec, String[] args) {
         if (msgrec instanceof Player) {
-            addEditing((Player) msgrec, false);
+            addGetEditing((Player) msgrec).enableEditing();
             msgrec.message(TextFormat.ORANGE + "Right-Click a sign to edit...");
         }
         else {
@@ -119,7 +119,7 @@ public final class SignEditListener extends VisualIllusionsCanaryPluginInformati
     )
     public final void persist(MessageReceiver msgrec, String[] args) {
         if (msgrec instanceof Player) {
-            addEditing((Player) msgrec, true);
+            addGetEditing((Player) msgrec).enableEditing().enablePersistance();
             msgrec.message(TextFormat.ORANGE + "Right-Click a sign to edit...");
         }
         else {
@@ -137,7 +137,9 @@ public final class SignEditListener extends VisualIllusionsCanaryPluginInformati
     public final void pasteText(MessageReceiver msgrec, String[] args) {
         if (msgrec instanceof Player) {
             if (hasCopiedText((Player) msgrec)) {
-                editors.get(msgrec).setPersistance(args.length > 2 && args[2].toLowerCase().matches("(\\-p|persist)"));
+                if (args.length > 1 && args[1].toLowerCase().matches("(\\-p|persist)")) {
+                    editors.get(msgrec).enablePersistance();
+                }
                 editors.get(msgrec).enablePasting();
                 msgrec.message(TextFormat.ORANGE + "Right-Click a sign to paste text to...");
             }
@@ -159,8 +161,7 @@ public final class SignEditListener extends VisualIllusionsCanaryPluginInformati
     )
     public final void copyText(MessageReceiver msgrec, String[] args) {
         if (msgrec instanceof Player) {
-            addEditing((Player) msgrec, false);
-            editors.get(msgrec).enableCopying();
+            addGetEditing((Player) msgrec).enableCopying();
             msgrec.message(TextFormat.ORANGE + "Right-Click a sign to copy text from...");
         }
         else {
@@ -197,8 +198,7 @@ public final class SignEditListener extends VisualIllusionsCanaryPluginInformati
     )
     public final void loadText(MessageReceiver msgrec, String[] args) {
         if (msgrec instanceof Player) {
-            addEditing((Player) msgrec, false);
-            editors.get(msgrec).loadSignText(args[1]);
+            addGetEditing((Player) msgrec).loadSignText(args[1]);
         }
         else {
             msgrec.notice("Only Players can save sign text.");
@@ -249,16 +249,14 @@ public final class SignEditListener extends VisualIllusionsCanaryPluginInformati
         return editors.containsKey(player) && editors.get(player).isPasting();
     }
 
-    private void addEditing(Player player, boolean persist) {
-        if (editors.containsKey(player)) {
-            editors.get(player).setPersistance(persist);
-        }
-        else {
-            editors.put(player, new SignEditor(player, persist));
-        }
-    }
-
     private boolean hasCopiedText(Player player) {
         return editors.containsKey(player) && editors.get(player).getCopied() != null;
+    }
+
+    private SignEditor addGetEditing(Player player) {
+        if (!editors.containsKey(player)) {
+            editors.put(player, new SignEditor(player));
+        }
+        return editors.get(player);
     }
 }

@@ -37,7 +37,7 @@ import java.util.HashMap;
 public final class SignEditListener extends VisualIllusionsCanaryPluginInformationCommand implements PluginListener {
 
     private final SignEdit signedit;
-    private final HashMap<Player, Boolean> editors = new HashMap<Player, Boolean>();
+    private final HashMap<Player, SignEditor> editors = new HashMap<Player, SignEditor>();
 
     public SignEditListener(SignEdit signedit) throws CommandDependencyException {
         super(signedit);
@@ -52,15 +52,25 @@ public final class SignEditListener extends VisualIllusionsCanaryPluginInformati
             Sign sign = (Sign) hook.getBlockClicked().getTileEntity();
             Player player = hook.getPlayer();
             if (isEditing(player)) {
-                if (sign.isEditable() || player.equals(sign.getOwner()) || player.hasPermission("signedit.editall")) {
-                    sign.setEditable(true);
-                    player.openSignEditWindow(sign);
+                if (isCopying(player)) {
+                    editors.get(player).storeCopied(sign.getText());
+                    player.message(TextFormat.CYAN.concat("Text copied, paste to other signs with /signedit paste"));
+                }
+                else if (sign.isEditable() || player.equals(sign.getOwner()) || player.hasPermission("signedit.editall")) {
+                    if (isPasting(player)) {
+                        sign.setText(editors.get(player).getCopied());
+                        sign.update();
+                    }
+                    else {
+                        sign.setEditable(true);
+                        player.openSignEditWindow(sign);
+                    }
                 }
                 else {
                     player.notice("You aren't allowed to edit that sign...");
                 }
                 if (!isPersistantEditing(player)) {
-                    editors.remove(player);
+                    editors.get(player).allOff();
                 }
                 hook.setCanceled();
             }
@@ -81,22 +91,130 @@ public final class SignEditListener extends VisualIllusionsCanaryPluginInformati
 
     @HookHandler
     public final void onPlayerGone(DisconnectionHook hook) {
-        editors.remove(hook.getPlayer());
+        editors.remove(hook.getPlayer()); //Garbage collect
     }
 
     @Command(
             aliases = { "signedit" },
             description = "Sign Edit activation command",
             permissions = { "signedit.edit" },
-            toolTip = "/signedit [persist]"
+            toolTip = "/signedit [copy|paste|save|load|persist|off]"
     )
     public final void editCommand(MessageReceiver msgrec, String[] args) {
         if (msgrec instanceof Player) {
-            addEditing((Player) msgrec, args.length > 1 && args[1].equals("persist"));
+            addEditing((Player) msgrec, false);
             msgrec.message(TextFormat.ORANGE + "Right-Click a sign to edit...");
         }
         else {
             msgrec.notice("Only Players can edit signs.");
+        }
+    }
+
+    @Command(
+            aliases = { "-p", "persist" },
+            description = "SignEdit Persistance Setting",
+            permissions = { "signedit.edit.persist" },
+            toolTip = "/signedit persist",
+            parent = "signedit"
+    )
+    public final void persist(MessageReceiver msgrec, String[] args) {
+        if (msgrec instanceof Player) {
+            addEditing((Player) msgrec, true);
+            msgrec.message(TextFormat.ORANGE + "Right-Click a sign to edit...");
+        }
+        else {
+            msgrec.notice("Only Players can edit signs.");
+        }
+    }
+
+    @Command(
+            aliases = { "paste" },
+            description = "Paste text to a sign",
+            permissions = { "signedit.edit.paste" },
+            toolTip = "/signedit paste [persist]",
+            parent = "signedit"
+    )
+    public final void pasteText(MessageReceiver msgrec, String[] args) {
+        if (msgrec instanceof Player) {
+            if (hasCopiedText((Player) msgrec)) {
+                editors.get(msgrec).setPersistance(args.length > 2 && args[2].toLowerCase().matches("(\\-p|persist)"));
+                editors.get(msgrec).enablePasting();
+                msgrec.message(TextFormat.ORANGE + "Right-Click a sign to paste text to...");
+            }
+            else {
+                msgrec.notice("You need to load or copy text before pasting");
+            }
+        }
+        else {
+            msgrec.notice("Only Players can save sign text.");
+        }
+    }
+
+    @Command(
+            aliases = { "copy" },
+            description = "Copies sign text",
+            permissions = { "signedit.edit.copy" },
+            toolTip = "/signedit copy",
+            parent = "signedit"
+    )
+    public final void copyText(MessageReceiver msgrec, String[] args) {
+        if (msgrec instanceof Player) {
+            addEditing((Player) msgrec, false);
+            editors.get(msgrec).enableCopying();
+            msgrec.message(TextFormat.ORANGE + "Right-Click a sign to copy text from...");
+        }
+        else {
+            msgrec.notice("Only Players can copy sign text.");
+        }
+    }
+
+    @Command(
+            aliases = { "save" },
+            description = "Saves sign text to a file",
+            permissions = { "signedit.edit.save" },
+            toolTip = "/signedit save <name>",
+            parent = "signedit",
+            min = 2
+    )
+    public final void saveText(MessageReceiver msgrec, String[] args) {
+        if (msgrec instanceof Player) {
+            if (hasCopiedText((Player) msgrec)) {
+                editors.get(msgrec).saveSignText(args[1]);
+            }
+        }
+        else {
+            msgrec.notice("Only Players can save sign text.");
+        }
+    }
+
+    @Command(
+            aliases = { "load" },
+            description = "Loads sign text from a file",
+            permissions = { "signedit.edit.load" },
+            toolTip = "/signedit load <name>",
+            parent = "signedit",
+            min = 2
+    )
+    public final void loadText(MessageReceiver msgrec, String[] args) {
+        if (msgrec instanceof Player) {
+            addEditing((Player) msgrec, false);
+            editors.get(msgrec).loadSignText(args[1]);
+        }
+        else {
+            msgrec.notice("Only Players can save sign text.");
+        }
+    }
+
+    @Command(
+            aliases = { "off" },
+            description = "Turns off all SignEdit things",
+            permissions = { "signedit.edit" },
+            toolTip = "/signedit off",
+            parent = "signedit"
+    )
+    public final void editOff(MessageReceiver msgrec, String[] args) {
+        if (msgrec instanceof Player && editors.containsKey(msgrec)) {
+            editors.get(msgrec).allOff();
         }
     }
 
@@ -116,14 +234,31 @@ public final class SignEditListener extends VisualIllusionsCanaryPluginInformati
     }
 
     private boolean isEditing(Player player) {
-        return editors.containsKey(player);
+        return editors.containsKey(player) && editors.get(player).isEditing();
     }
 
     private boolean isPersistantEditing(Player player) {
-        return editors.get(player);
+        return editors.containsKey(player) && editors.get(player).isPersistent();
+    }
+
+    private boolean isCopying(Player player) {
+        return editors.containsKey(player) && editors.get(player).isCopying();
+    }
+
+    private boolean isPasting(Player player) {
+        return editors.containsKey(player) && editors.get(player).isPasting();
     }
 
     private void addEditing(Player player, boolean persist) {
-        editors.put(player, persist);
+        if (editors.containsKey(player)) {
+            editors.get(player).setPersistance(persist);
+        }
+        else {
+            editors.put(player, new SignEditor(player, persist));
+        }
+    }
+
+    private boolean hasCopiedText(Player player) {
+        return editors.containsKey(player) && editors.get(player).getCopied() != null;
     }
 }

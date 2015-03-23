@@ -1,27 +1,27 @@
 /*
  * This file is part of SignEdit.
  *
- * Copyright © 2013-2014 Visual Illusions Entertainment
+ * Copyright © 2013-2015 Visual Illusions Entertainment
  *
  * SignEdit is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU General Public License v3 as published by
  * the Free Software Foundation, either version 3 of the License,
  * or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
+ * See the GNU General Public License v3 for more details.
  *
- * You should have received a copy of the GNU General Public License along with this program.
+ * You should have received a copy of the GNU General Public License v3 along with this program.
  * If not, see http://www.gnu.org/licenses/gpl.html.
  */
 package net.visualillusionsent.signedit;
 
+import net.canarymod.api.chat.ChatComponent;
 import net.canarymod.api.entity.living.humanoid.Player;
 import net.canarymod.api.world.blocks.BlockType;
 import net.canarymod.api.world.blocks.Sign;
 import net.canarymod.chat.MessageReceiver;
-import net.canarymod.chat.TextFormat;
 import net.canarymod.commandsys.Command;
 import net.canarymod.commandsys.CommandDependencyException;
 import net.canarymod.hook.HookHandler;
@@ -30,20 +30,19 @@ import net.canarymod.hook.player.DisconnectionHook;
 import net.canarymod.hook.player.SignChangeHook;
 import net.canarymod.plugin.PluginListener;
 import net.canarymod.plugin.Priority;
+import net.visualillusionsent.minecraft.plugin.ChatFormat;
 import net.visualillusionsent.minecraft.plugin.canary.VisualIllusionsCanaryPluginInformationCommand;
 
 import java.util.HashMap;
 
 public final class SignEditListener extends VisualIllusionsCanaryPluginInformationCommand implements PluginListener {
 
-    private final SignEdit signedit;
     private final HashMap<Player, SignEditor> editors = new HashMap<Player, SignEditor>();
 
     public SignEditListener(SignEdit signedit) throws CommandDependencyException {
         super(signedit);
         signedit.registerListener(this);
         signedit.registerCommands(this, false);
-        this.signedit = signedit;
     }
 
     @HookHandler(priority = Priority.HIGH)
@@ -53,12 +52,13 @@ public final class SignEditListener extends VisualIllusionsCanaryPluginInformati
             Player player = hook.getPlayer();
             if (isEditing(player)) {
                 if (isCopying(player)) {
-                    editors.get(player).storeCopied(sign.getText());
-                    player.message(TextFormat.CYAN.concat("Text copied, paste to other signs with /signedit paste"));
+                    editors.get(player).storeCopied(sign.getLines());
+                    player.message(ChatFormat.CYAN.concat("Text copied, paste to other signs with /signedit paste"));
                 }
                 else if (sign.isEditable() || player.equals(sign.getOwner()) || player.hasPermission("signedit.editall")) {
                     if (isPasting(player)) {
-                        sign.setText(editors.get(player).getCopied());
+                        //sign.setText(editors.get(player).getCopied());
+                        sign.setComponents(editors.get(player).getCopied());
                         sign.update();
                     }
                     else {
@@ -80,11 +80,11 @@ public final class SignEditListener extends VisualIllusionsCanaryPluginInformati
     @HookHandler
     public final void onSignChange(SignChangeHook hook) {
         if (hook.getPlayer().hasPermission("signedit.colors")) {
-            String[] text = hook.getSign().getText();
+            ChatComponent[] text = hook.getSign().getLines();
             for (int index = 0; index < 4; index++) {
-                text[index] = text[index].replaceAll("&([0-9A-FK-NRa-fk-nr])", "\u00A7$1");
+                text[index] = SignEdit.newComponent(text[index].getFullText().replaceAll("&([0-9A-FK-NRa-fk-nr])", "\u00A7$1"));
             }
-            hook.getSign().setText(text);
+            hook.getSign().setComponents(text);
             hook.getSign().setEditable(false);
         }
     }
@@ -103,7 +103,7 @@ public final class SignEditListener extends VisualIllusionsCanaryPluginInformati
     public final void editCommand(MessageReceiver msgrec, String[] args) {
         if (msgrec instanceof Player) {
             addGetEditing((Player) msgrec).enableEditing();
-            msgrec.message(TextFormat.ORANGE + "Right-Click a sign to edit...");
+            msgrec.message(ChatFormat.ORANGE + "Right-Click a sign to edit...");
         }
         else {
             msgrec.notice("Only Players can edit signs.");
@@ -120,7 +120,7 @@ public final class SignEditListener extends VisualIllusionsCanaryPluginInformati
     public final void persist(MessageReceiver msgrec, String[] args) {
         if (msgrec instanceof Player) {
             addGetEditing((Player) msgrec).enableEditing().enablePersistance();
-            msgrec.message(TextFormat.ORANGE + "Right-Click a sign to edit...");
+            msgrec.message(ChatFormat.ORANGE + "Right-Click a sign to edit...");
         }
         else {
             msgrec.notice("Only Players can edit signs.");
@@ -141,7 +141,7 @@ public final class SignEditListener extends VisualIllusionsCanaryPluginInformati
                     editors.get(msgrec).enablePersistance();
                 }
                 editors.get(msgrec).enablePasting();
-                msgrec.message(TextFormat.ORANGE + "Right-Click a sign to paste text to...");
+                msgrec.message(ChatFormat.ORANGE + "Right-Click a sign to paste text to...");
             }
             else {
                 msgrec.notice("You need to load or copy text before pasting");
@@ -162,7 +162,7 @@ public final class SignEditListener extends VisualIllusionsCanaryPluginInformati
     public final void copyText(MessageReceiver msgrec, String[] args) {
         if (msgrec instanceof Player) {
             addGetEditing((Player) msgrec).enableCopying();
-            msgrec.message(TextFormat.ORANGE + "Right-Click a sign to copy text from...");
+            msgrec.message(ChatFormat.ORANGE + "Right-Click a sign to copy text from...");
         }
         else {
             msgrec.notice("Only Players can copy sign text.");

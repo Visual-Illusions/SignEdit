@@ -1,6 +1,6 @@
 ﻿# SignEdit #
 ### Sign Editing system for CanaryMod ###
-#### Copyright &copy; 2013-2014 Visual Illusions Entertainment ####
+#### Copyright &copy; 2013-2015 Visual Illusions Entertainment ####
 #### Licensed under the GNU General Public License v3 (See License below) ####
 
 ## About ##

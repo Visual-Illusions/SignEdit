@@ -1,22 +1,23 @@
 /*
  * This file is part of SignEdit.
  *
- * Copyright © 2013-2014 Visual Illusions Entertainment
+ * Copyright © 2013-2015 Visual Illusions Entertainment
  *
  * SignEdit is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU General Public License v3 as published by
  * the Free Software Foundation, either version 3 of the License,
  * or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
+ * See the GNU General Public License v3 for more details.
  *
- * You should have received a copy of the GNU General Public License along with this program.
+ * You should have received a copy of the GNU General Public License v3 along with this program.
  * If not, see http://www.gnu.org/licenses/gpl.html.
  */
 package net.visualillusionsent.signedit;
 
+import net.canarymod.api.chat.ChatComponent;
 import net.canarymod.api.entity.living.humanoid.Player;
 import net.visualillusionsent.minecraft.plugin.ChatFormat;
 
@@ -32,8 +33,16 @@ final class SignEditor {
     private static final File signsDir = new File("config/SignEdit/signs/");
 
     private final Player player;
-    private boolean editing, persistent, copying, pasting;
-    private String[] copied;
+    private boolean persistent;
+    private EditMode mode;
+    private ChatComponent[] copied;
+
+    private enum EditMode {
+        EDITING,
+        COPYING,
+        PASTING,
+        OFF
+    }
 
     static {
         if (!signsDir.exists()) {
@@ -46,7 +55,7 @@ final class SignEditor {
     }
 
     final boolean isEditing() {
-        return editing;
+        return !mode.equals(EditMode.OFF);
     }
 
     final boolean isPersistent() {
@@ -54,16 +63,15 @@ final class SignEditor {
     }
 
     final boolean isCopying() {
-        return copying;
+        return mode.equals(EditMode.COPYING);
     }
 
     final boolean isPasting() {
-        return pasting;
+        return mode.equals(EditMode.PASTING);
     }
 
     final SignEditor enableEditing() {
-        allOff();
-        this.editing = true;
+        mode = EditMode.EDITING;
         return this;
     }
 
@@ -73,32 +81,25 @@ final class SignEditor {
     }
 
     final void enableCopying() {
-        this.editing = true;
-        this.copying = true;
-        this.pasting = false; //Can't do both, so turn off pasting
+        this.mode = EditMode.COPYING;
         this.persistent = false; // Shouldn't persistently copy text
     }
 
     final SignEditor enablePasting() {
-        this.editing = true;
-        this.pasting = true;
-        this.copying = false; //Can't do both, so turn off copying
+        this.mode = EditMode.PASTING;
         return this;
     }
 
     final SignEditor allOff() {
-        this.editing = false;
-        this.persistent = false;
-        this.pasting = false;
-        this.copying = false;
+        this.mode = EditMode.OFF;
         return this;
     }
 
-    final String[] getCopied() {
+    final ChatComponent[] getCopied() {
         return copied.clone();
     }
 
-    final void storeCopied(String[] text) {
+    final void storeCopied(ChatComponent[] text) {
         this.copied = text.clone();
     }
 
@@ -107,7 +108,7 @@ final class SignEditor {
         try {
             scan = new Scanner(new File(signsDir, file.concat(".sign")));
             if (copied == null) {
-                copied = new String[4];
+                copied = new ChatComponent[4];
             }
             for (int index = 0; index < 4; index++) {
                 if (scan.hasNextLine()) {
@@ -115,7 +116,7 @@ final class SignEditor {
                     while (temp.startsWith("#") && scan.hasNextLine()) { // remove comments
                         temp = scan.nextLine();
                     }
-                    copied[index] = temp.length() > 15 ? temp.substring(0, 15) : temp;
+                    copied[index] = SignEdit.newComponent(temp.length() > 15 ? temp.substring(0, 15) : temp);
                 }
             }
             player.message(ChatFormat.CYAN.concat("Sign text loaded"));
@@ -135,8 +136,8 @@ final class SignEditor {
         PrintWriter out = null;
         try {
             out = new PrintWriter(new File(signsDir, fileName.concat(".sign")));
-            for (String line : copied) {
-                out.println(line);
+            for (ChatComponent line : copied) {
+                out.println(line.getFullText());
             }
             player.message(ChatFormat.CYAN.concat("Text has been saved to " + fileName));
         }

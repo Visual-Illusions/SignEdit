@@ -34,7 +34,7 @@ final class SignEditor {
 
     private final Player player;
     private boolean persistent;
-    private EditMode mode;
+    private EditMode mode = EditMode.OFF;
     private ChatComponent[] copied;
 
     private enum EditMode {

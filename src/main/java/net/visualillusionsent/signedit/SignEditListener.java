@@ -137,7 +137,7 @@ public final class SignEditListener extends VisualIllusionsCanaryPluginInformati
     public final void pasteText(MessageReceiver msgrec, String[] args) {
         if (msgrec instanceof Player) {
             if (hasCopiedText((Player) msgrec)) {
-                if (args.length > 1 && args[1].toLowerCase().matches("(\\-p|persist)")) {
+                if (args.length > 1 && args[1].toLowerCase().matches("(\\-p|persist)") && msgrec.hasPermission("signedit.edit.persist")) {
                     editors.get(msgrec).enablePersistance();
                 }
                 editors.get(msgrec).enablePasting();

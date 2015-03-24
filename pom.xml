@@ -14,7 +14,7 @@ Copyright © 2013-2015 Visual Illusions Entertainment
     <inceptionYear>2013</inceptionYear>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <mcpluginlib.version>1.2.0-SNAPSHOT</mcpluginlib.version>
+        <mcpluginlib.version>1.2.0</mcpluginlib.version>
         <canary.main.class>${project.groupId}.${project.artifactId}.${project.name}</canary.main.class>
         <status.url>http://status.visualillusionsent.net/</status.url>
         <devs>darkdiplomat</devs>
